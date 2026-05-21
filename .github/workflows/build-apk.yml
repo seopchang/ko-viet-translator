@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    name: Android APK 로컬 빌드
+    name: Android APK 빌드
     runs-on: ubuntu-latest
 
     steps:
@@ -26,22 +26,25 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: 🔧 EAS CLI 설치
-        run: npm install -g eas-cli
-
       - name: 📦 npm install
         run: npm install --legacy-peer-deps
 
-      - name: 🔨 APK 빌드 (preview)
-        run: eas build --platform android --profile preview --local --non-interactive --output ./build/app-release.apk
+      - name: 🔧 Expo Prebuild (Android 네이티브 프로젝트 생성)
+        run: npx expo prebuild --platform android --no-install
+
+      - name: 🔨 APK 빌드 (Gradle)
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
         env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          ANDROID_HOME: /usr/local/lib/android/sdk
 
       - name: 📤 APK 업로드
         uses: actions/upload-artifact@v4
         with:
           name: 한베번역기-${{ github.run_number }}.apk
-          path: ./build/app-release.apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
 
       - name: 📧 이메일 발송
@@ -61,4 +64,4 @@ jobs:
             위 링크 → Artifacts 섹션에서 APK를 다운로드하세요.
           to: ${{ secrets.MAIL_TO }}
           from: GitHub Actions <${{ secrets.MAIL_USERNAME }}>
-          attachments: ./build/app-release.apk
+          attachments: android/app/build/outputs/apk/debug/app-debug.apk

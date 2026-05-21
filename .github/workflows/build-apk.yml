@@ -1,0 +1,64 @@
+name: 📱 APK 빌드 (한베번역기)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Android APK 로컬 빌드
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: 🟢 Node.js 설치
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: ☕ JDK 17 설치
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: 🔧 EAS CLI 설치
+        run: npm install -g eas-cli
+
+      - name: 📦 npm install
+        run: npm install
+
+      - name: 🔨 APK 빌드 (preview)
+        run: eas build --platform android --profile preview --local --non-interactive --output ./build/app-release.apk
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: 📤 APK 업로드
+        uses: actions/upload-artifact@v4
+        with:
+          name: 한베번역기-${{ github.run_number }}.apk
+          path: ./build/app-release.apk
+          retention-days: 30
+
+      - name: 📧 이메일 발송
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "✅ [한베번역기] APK 빌드 완료 - #${{ github.run_number }}"
+          body: |
+            한베번역기 APK 빌드가 완료되었습니다!
+
+            📦 빌드 번호: #${{ github.run_number }}
+            🔗 다운로드: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+            위 링크 → Artifacts 섹션에서 APK를 다운로드하세요.
+          to: ${{ secrets.MAIL_TO }}
+          from: GitHub Actions <${{ secrets.MAIL_USERNAME }}>
+          attachments: ./build/app-release.apk

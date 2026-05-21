@@ -1,0 +1,34 @@
+{
+  "expo": {
+    "name": "한베번역기",
+    "slug": "ko-viet-translator",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "ko-viet-translator",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "icon": "./assets/icon.png",
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.koviet.translator"
+    },
+    "android": {
+      "package": "com.koviet.translator",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#ffffff"
+      }
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "번역을 위해 사진 접근이 필요합니다.",
+          "cameraPermission": "번역을 위해 카메라 접근이 필요합니다."
+        }
+      ]
+    ]
+  }
+}

@@ -30,7 +30,7 @@ jobs:
         run: npm install -g eas-cli
 
       - name: 📦 npm install
-        run: npm install
+        run: npm install --legacy-peer-deps
 
       - name: 🔨 APK 빌드 (preview)
         run: eas build --platform android --profile preview --local --non-interactive --output ./build/app-release.apk

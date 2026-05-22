@@ -1,4 +1,4 @@
-name: 📱 APK 빌드 (한베번역기)
+name: Build Android APK
 
 on:
   workflow_dispatch:
@@ -8,60 +8,43 @@ on:
 
 jobs:
   build:
-    name: Android APK 빌드
+    name: Android APK Build
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📥 코드 체크아웃
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: 🟢 Node.js 설치
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
+          cache: 'npm'
 
-      - name: ☕ JDK 17 설치
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: 📦 npm install
-        run: npm install --legacy-peer-deps
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
 
-      - name: 🔧 Expo Prebuild (Android 네이티브 프로젝트 생성)
-        run: npx expo prebuild --platform android --no-install
+      - name: Install dependencies
+        run: npm install
 
-      - name: 🔨 APK 빌드 (Gradle)
+      - name: Expo Prebuild
+        run: npx expo prebuild --platform android --clean
+
+      - name: Build APK
         run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
-        env:
-          ANDROID_HOME: /usr/local/lib/android/sdk
 
-      - name: 📤 APK 업로드
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: 한베번역기-${{ github.run_number }}.apk
+          name: simple-translator-${{ github.run_number }}
           path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
-
-      - name: 📧 이메일 발송
-        uses: dawidd6/action-send-mail@v3
-        with:
-          server_address: smtp.gmail.com
-          server_port: 587
-          username: ${{ secrets.MAIL_USERNAME }}
-          password: ${{ secrets.MAIL_PASSWORD }}
-          subject: "✅ [한베번역기] APK 빌드 완료 - #${{ github.run_number }}"
-          body: |
-            한베번역기 APK 빌드가 완료되었습니다!
-
-            📦 빌드 번호: #${{ github.run_number }}
-            🔗 다운로드: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-
-            위 링크 → Artifacts 섹션에서 APK를 다운로드하세요.
-          to: ${{ secrets.MAIL_TO }}
-          from: GitHub Actions <${{ secrets.MAIL_USERNAME }}>
-          attachments: android/app/build/outputs/apk/debug/app-debug.apk

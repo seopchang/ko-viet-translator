@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "한베번역기",
+    "name": "Simple Translator",
     "slug": "ko-viet-translator",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -18,7 +18,8 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "permissions": ["RECORD_AUDIO", "READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE"]
     },
     "plugins": [
       "expo-router",

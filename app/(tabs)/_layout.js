@@ -1,16 +1,21 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useLanguage } from '../../src/context/LanguageContext';
+import { strings } from '../../src/utils/i18n';
 
 export default function TabLayout() {
+  const { language } = useLanguage();
+  const t = strings[language];
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#000000',
-        tabBarInactiveTintColor: '#AAAAAA',
+        tabBarActiveTintColor: '#3D2314',
+        tabBarInactiveTintColor: '#B8AA9A',
         tabBarStyle: {
           backgroundColor: '#FFFFFF',
-          borderTopColor: '#EAEAEA',
+          borderTopColor: '#EDE8E0',
           borderTopWidth: 1,
           height: 60,
           paddingBottom: 8,
@@ -24,7 +29,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: '번역',
+          title: t.tabTranslate,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="language-outline" size={size} color={color} />
           ),
@@ -33,7 +38,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="settings"
         options={{
-          title: '설정',
+          title: t.tabSettings,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="settings-outline" size={size} color={color} />
           ),

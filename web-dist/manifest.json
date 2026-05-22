@@ -1,0 +1,18 @@
+{
+  "name": "Simple Translator",
+  "short_name": "번역기",
+  "description": "한국어-베트남어 번역기",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FAF8F5",
+  "theme_color": "#3D2314",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

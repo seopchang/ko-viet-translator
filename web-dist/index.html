@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="번역기">
+  <meta name="theme-color" content="#3D2314">
+  <link rel="manifest" href="manifest.json">
+  <title>Simple Translator</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#FAF8F5}
+    #app{display:flex;flex-direction:column;height:100vh;height:100dvh}
+    .header{padding:52px 18px 12px;border-bottom:1px solid #EDE8E0;background:#FAF8F5;flex-shrink:0}
+    .header-title{font-size:20px;font-weight:800;color:#1A0F08;letter-spacing:-0.5px}
+    .header-sub{font-size:12px;color:#9C8B7A;margin-top:2px}
+    .messages{flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch}
+    .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;color:#C5BAB0;text-align:center}
+    .empty-icon{font-size:44px}
+    .empty-text{font-size:14px;line-height:22px;padding:0 20px}
+    .user-row{display:flex;justify-content:flex-end;margin-bottom:14px}
+    .user-bubble{background:#3D2314;color:#fff;padding:10px 14px;border-radius:18px 18px 4px 18px;max-width:80%;font-size:15px;line-height:22px;word-break:break-word}
+    .user-img{max-width:200px;border-radius:12px;display:block}
+    .ai-row{margin-bottom:18px}
+    .ai-header{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+    .ai-badge{background:#EDE8E0;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;color:#7A6A5A}
+    .copy-btn{background:none;border:none;cursor:pointer;padding:4px;color:#B8AA9A;font-size:16px;line-height:1}
+    .ai-bubble{background:#fff;border:1px solid #EDE8E0;border-radius:4px 18px 18px 18px;padding:12px 14px;font-size:15px;color:#1A0F08;line-height:24px;white-space:pre-wrap;word-break:break-word}
+    .triggers{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+    .trigger-btn{border:1px solid #DDD5CA;background:#fff;border-radius:20px;padding:7px 12px;font-size:12px;color:#3D2314;font-weight:600;cursor:pointer}
+    .trigger-done{background:#F5F1EC;border-color:#EDE8E0;color:#B8AA9A}
+    .loading-row{display:none;align-items:center;gap:8px;padding:8px 16px;color:#9C8B7A;font-size:13px;flex-shrink:0}
+    .spinner{width:16px;height:16px;border:2px solid #EDE8E0;border-top-color:#3D2314;border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .input-bar{display:flex;align-items:flex-end;padding:10px 12px;padding-bottom:calc(10px + env(safe-area-inset-bottom));border-top:1px solid #EDE8E0;background:#fff;gap:8px;flex-shrink:0}
+    .icon-btn{width:40px;height:40px;border-radius:20px;border:1.5px solid #DDD5CA;background:#FAF8F5;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px;flex-shrink:0}
+    .text-input{flex:1;border:1.5px solid #DDD5CA;border-radius:20px;padding:10px 14px;font-size:15px;color:#1A0F08;background:#FAF8F5;resize:none;min-height:40px;max-height:100px;outline:none;font-family:inherit;line-height:1.4}
+    .send-btn{width:40px;height:40px;border-radius:20px;background:#3D2314;border:none;color:#fff;font-size:18px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+    .send-btn:disabled{background:#C5BAB0;cursor:default}
+    .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(61,35,20,.85);color:#fff;border-radius:20px;padding:8px 16px;font-size:13px;font-weight:600;z-index:999;pointer-events:none;white-space:nowrap}
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:100;display:none}
+    .panel{position:fixed;bottom:0;left:0;right:0;background:#fff;border-radius:20px 20px 0 0;padding:12px 20px calc(28px + env(safe-area-inset-bottom));z-index:101;transform:translateY(100%);transition:transform .22s cubic-bezier(.32,.72,0,1)}
+    .panel.open{transform:translateY(0)}
+    .panel-handle{width:40px;height:4px;border-radius:2px;background:#DDD5CA;margin:0 auto 20px}
+    .panel-grid{display:flex;gap:16px}
+    .panel-item{display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;padding:4px}
+    .panel-icon{width:64px;height:64px;border-radius:16px;background:#FAF8F5;border:1px solid #EDE8E0;display:flex;align-items:center;justify-content:center;font-size:28px}
+    .panel-lbl{font-size:12px;color:#4A3728;font-weight:600}
+    .settings-wrap{display:none;flex-direction:column;height:100vh;height:100dvh;overflow-y:auto}
+    .settings-wrap.show{display:flex}
+    .settings-body{padding:16px;padding-top:52px;padding-bottom:100px}
+    .s-title{font-size:26px;font-weight:800;color:#1A0F08;letter-spacing:-.6px;margin-bottom:20px}
+    .section{margin-bottom:20px}
+    .s-label{font-size:13px;font-weight:700;color:#9C8B7A;letter-spacing:.5px;text-transform:uppercase;margin-bottom:10px}
+    .s-desc{font-size:12px;color:#B8AA9A;margin-bottom:10px;margin-top:-6px}
+    .toggle-row{display:flex;gap:10px}
+    .toggle-btn{flex:1;border:1.5px solid #DDD5CA;border-radius:12px;padding:14px 12px;text-align:center;cursor:pointer;background:#FAF8F5;transition:background .15s,border-color .15s}
+    .toggle-btn.on{border-color:#3D2314;background:#3D2314}
+    .toggle-main{font-size:15px;font-weight:700;color:#9C8B7A}
+    .toggle-btn.on .toggle-main{color:#fff}
+    .toggle-sub{font-size:11px;color:#C5BAB0;margin-top:2px}
+    .toggle-btn.on .toggle-sub{color:rgba(255,255,255,.5)}
+    .card{background:#fff;border-radius:14px;padding:16px;border:1px solid #EDE8E0}
+    .c-label{font-size:14px;font-weight:600;color:#4A3728;margin-bottom:10px}
+    .api-input{width:100%;border:1.5px solid #DDD5CA;border-radius:10px;padding:12px;font-size:13px;color:#1A0F08;background:#FAF8F5;margin-bottom:8px;outline:none;font-family:inherit}
+    .api-hint{font-size:12px;color:#B8AA9A;line-height:18px;margin-bottom:10px}
+    .test-btn{width:100%;padding:11px;border:1.5px solid #DDD5CA;border-radius:10px;background:#fff;font-size:14px;font-weight:600;color:#4A3728;cursor:pointer}
+    .test-res{display:none;align-items:center;gap:6px;border-radius:8px;padding:10px;margin-bottom:10px;font-size:13px;font-weight:500}
+    .res-ok{background:#F0FFF4;color:#16A34A}
+    .res-fail{background:#FFF5F5;color:#DC2626}
+    .save-btn{width:100%;padding:15px;background:#3D2314;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer}
+    .save-btn.done{background:#22C55E}
+    .badge{background:#3D2314;border-radius:5px;padding:2px 7px;font-size:9px;font-weight:700;color:#fff;margin-left:8px;display:none}
+    .tab-bar{position:fixed;bottom:0;left:0;right:0;display:flex;background:#fff;border-top:1px solid #EDE8E0;padding-bottom:env(safe-area-inset-bottom);z-index:50}
+    .tab-btn{flex:1;display:flex;flex-direction:column;align-items:center;padding:10px 0 8px;cursor:pointer;border:none;background:none;gap:3px}
+    .tab-icon{font-size:22px}
+    .tab-lbl{font-size:10px;font-weight:600;color:#B8AA9A}
+    .tab-btn.on .tab-lbl{color:#3D2314}
+    #main-wrap{display:flex;flex-direction:column;height:calc(100dvh - 50px)}
+  </style>
+</head>
+<body>
+
+<div class="tab-bar">
+  <button class="tab-btn on" id="tab-t" onclick="showTab('t')">
+    <span class="tab-icon">💬</span>
+    <span class="tab-lbl" id="lbl-t">번역</span>
+  </button>
+  <button class="tab-btn" id="tab-s" onclick="showTab('s')">
+    <span class="tab-icon">⚙️</span>
+    <span class="tab-lbl" id="lbl-s">설정</span>
+  </button>
+</div>
+
+<div id="main-wrap">
+  <div class="header">
+    <div class="header-title" id="h-title">Simple Translator</div>
+    <div class="header-sub" id="h-sub">한국어 ↔ 베트남어</div>
+  </div>
+  <div class="messages" id="msgs"></div>
+  <div class="loading-row" id="loading">
+    <div class="spinner"></div>
+    <span id="loading-txt">번역 중...</span>
+  </div>
+  <div class="input-bar">
+    <button class="icon-btn" onclick="openPanel()">＋</button>
+    <textarea class="text-input" id="inp" rows="1" oninput="onInput(this)" onkeydown="onKey(event)"></textarea>
+    <button class="send-btn" id="send-btn" onclick="doSend()" disabled>↑</button>
+  </div>
+</div>
+
+<div class="settings-wrap" id="settings-wrap">
+  <div class="settings-body">
+    <div class="s-title" id="s-title">설정</div>
+    <div class="section">
+      <div class="s-label" id="s-lang">앱 언어</div>
+      <div class="s-desc" id="s-lang-desc">UI 표시 언어 선택</div>
+      <div class="toggle-row">
+        <div class="toggle-btn on" id="l-ko" onclick="setLang('ko')"><div class="toggle-main">한국어</div></div>
+        <div class="toggle-btn" id="l-vi" onclick="setLang('vi')"><div class="toggle-main">Tiếng Việt</div></div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="s-label" id="s-prov">AI 제공자</div>
+      <div class="s-desc" id="s-prov-desc">번역에 사용할 AI 선택</div>
+      <div class="toggle-row">
+        <div class="toggle-btn on" id="p-gem" onclick="setProv('gemini')"><div class="toggle-main">Gemini</div><div class="toggle-sub">Google AI Studio</div></div>
+        <div class="toggle-btn" id="p-groq" onclick="setProv('groq')"><div class="toggle-main">Groq</div><div class="toggle-sub">console.groq.com</div></div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="s-label">Gemini API<span class="badge" id="gem-badge">사용 중</span></div>
+      <div class="card">
+        <div class="c-label" id="gem-lbl">API 키</div>
+        <input class="api-input" id="gem-key" type="text" placeholder="AIza..." autocomplete="off" oninput="clearRes('gem-res')">
+        <div class="api-hint" id="gem-hint">aistudio.google.com에서 발급</div>
+        <div class="test-res" id="gem-res"></div>
+        <button class="test-btn" id="gem-test" onclick="testKey('gemini')">연결 테스트</button>
+      </div>
+    </div>
+    <div class="section">
+      <div class="s-label">Groq API<span class="badge" id="groq-badge">사용 중</span></div>
+      <div class="card">
+        <div class="c-label" id="groq-lbl">API 키</div>
+        <input class="api-input" id="groq-key" type="text" placeholder="gsk_..." autocomplete="off" oninput="clearRes('groq-res')">
+        <div class="api-hint" id="groq-hint">console.groq.com에서 발급</div>
+        <div class="test-res" id="groq-res"></div>
+        <button class="test-btn" id="groq-test" onclick="testKey('groq')">연결 테스트</button>
+      </div>
+    </div>
+    <div class="section">
+      <button class="save-btn" id="save-btn" onclick="doSave()">설정 저장</button>
+    </div>
+    <div style="text-align:center;padding:12px 0;color:#B8AA9A;font-size:12px">Simple Translator v1.0.0</div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay" onclick="closePanel()"></div>
+<div class="panel" id="panel">
+  <div class="panel-handle"></div>
+  <div class="panel-grid">
+    <div class="panel-item" onclick="doGallery()">
+      <div class="panel-icon">🖼️</div>
+      <div class="panel-lbl" id="lbl-gallery">갤러리</div>
+    </div>
+    <div class="panel-item" onclick="doVoice()">
+      <div class="panel-icon">🎤</div>
+      <div class="panel-lbl" id="lbl-voice">음성</div>
+    </div>
+  </div>
+</div>
+<input type="file" id="file-inp" accept="image/*" style="display:none" onchange="onFileChosen(event)">
+
+<script>
+const GEMINI = 'https://generativelanguage.googleapis.com/v1beta';
+const GROQ = 'https://api.groq.com/openai/v1/chat/completions';
+const SYS = '너는 번역기다. 절대 인사말, 부연 설명, 마크다운을 출력하지 마라. 입력 언어를 자동 감지하여: 한국어이면 베트남어로, 베트남어이면 한국어로, 그 외 모든 언어는 베트남어로 번역하라. 원문을 요약·축소·변형하지 말고 100% 보존하라. 반드시 다음 JSON 형식으로만 응답하라: {"translation":"번역결과"}';
+
+const S = {
+  ko:{appName:'Simple Translator',appSub:'한국어 ↔ 베트남어',ph:'번역할 내용을 입력하세요...',loading:'번역 중...',badge:'AI 번역',copied:'복사됨',empty:'텍스트나 이미지를 번역해보세요',tabT:'번역',tabS:'설정',sTitle:'설정',sLang:'앱 언어',sLangDesc:'UI 표시 언어 선택',sProv:'AI 제공자',sProvDesc:'번역에 사용할 AI 선택',gemHint:'aistudio.google.com에서 발급',groqHint:'console.groq.com에서 발급',testBtn:'연결 테스트',testOk:'연결 성공',testFail:'연결 실패',saveBtn:'설정 저장',saved:'저장됨 ✓',gallery:'갤러리',voice:'음성',voiceMsg:'음성 번역은 앱에서만 지원됩니다.',imgLbl:'[이미지]',noKey:'설정에서 API 키를 입력해주세요.',rateLimit:'잠시 후 다시 시도해주세요.',err:'번역에 실패했습니다.',ctx:'현지 문화 설명',simple:'더 쉬운 표현',done:'만족해요',using:'사용 중'},
+  vi:{appName:'Simple Translator',appSub:'Hàn ↔ Việt',ph:'Nhập nội dung cần dịch...',loading:'Đang dịch...',badge:'AI Dịch',copied:'Đã sao chép',empty:'Dịch văn bản hoặc hình ảnh',tabT:'Dịch',tabS:'Cài đặt',sTitle:'Cài đặt',sLang:'Ngôn ngữ',sLangDesc:'Chọn ngôn ngữ hiển thị',sProv:'Nhà cung cấp AI',sProvDesc:'Chọn AI để dịch',gemHint:'Lấy tại aistudio.google.com',groqHint:'Lấy tại console.groq.com',testBtn:'Kiểm tra kết nối',testOk:'Kết nối thành công',testFail:'Kết nối thất bại',saveBtn:'Lưu cài đặt',saved:'Đã lưu ✓',gallery:'Thư viện',voice:'Giọng nói',voiceMsg:'Dịch giọng nói chỉ hỗ trợ trên ứng dụng.',imgLbl:'[Hình ảnh]',noKey:'Vui lòng nhập API key trong cài đặt.',rateLimit:'Vui lòng thử lại sau.',err:'Dịch thất bại.',ctx:'Giải thích văn hóa',simple:'Cách diễn đạt đơn giản hơn',done:'Hài lòng rồi',using:'Đang dùng'}
+};
+
+let lang=localStorage.getItem('lang')||'ko';
+let prov=localStorage.getItem('prov')||'gemini';
+let gKey=localStorage.getItem('gKey')||'';
+let qKey=localStorage.getItem('qKey')||'';
+let msgs=[],mid=0,busy=false;
+
+const t=k=>S[lang][k]||k;
+const $=id=>document.getElementById(id);
+
+function applyLang(){
+  const s=S[lang];
+  $('h-title').textContent=s.appName; $('h-sub').textContent=s.appSub;
+  $('inp').placeholder=s.ph; $('loading-txt').textContent=s.loading;
+  $('lbl-t').textContent=s.tabT; $('lbl-s').textContent=s.tabS;
+  $('s-title').textContent=s.sTitle; $('s-lang').textContent=s.sLang;
+  $('s-lang-desc').textContent=s.sLangDesc; $('s-prov').textContent=s.sProv;
+  $('s-prov-desc').textContent=s.sProvDesc; $('gem-hint').textContent=s.gemHint;
+  $('groq-hint').textContent=s.groqHint; $('gem-test').textContent=s.testBtn;
+  $('groq-test').textContent=s.testBtn; $('save-btn').textContent=s.saveBtn;
+  $('lbl-gallery').textContent=s.gallery; $('lbl-voice').textContent=s.voice;
+  $('gem-lbl').textContent='API 키'; $('groq-lbl').textContent='API 키';
+  $('gem-badge').textContent=s.using; $('groq-badge').textContent=s.using;
+  $('l-ko').classList.toggle('on',lang==='ko'); $('l-vi').classList.toggle('on',lang==='vi');
+  renderMsgs();
+}
+
+function setLang(l){lang=l;localStorage.setItem('lang',l);applyLang();}
+
+function setProv(p){
+  prov=p;
+  $('p-gem').classList.toggle('on',p==='gemini'); $('p-groq').classList.toggle('on',p==='groq');
+  $('gem-badge').style.display=p==='gemini'?'inline-block':'none';
+  $('groq-badge').style.display=p==='groq'?'inline-block':'none';
+}
+
+function doSave(){
+  gKey=$('gem-key').value.trim(); qKey=$('groq-key').value.trim();
+  localStorage.setItem('prov',prov); localStorage.setItem('gKey',gKey); localStorage.setItem('qKey',qKey);
+  const btn=$('save-btn'); btn.textContent=t('saved'); btn.classList.add('done');
+  setTimeout(()=>{btn.textContent=t('saveBtn');btn.classList.remove('done');},2000);
+}
+
+function showTab(tab){
+  const isT=tab==='t';
+  $('main-wrap').style.display=isT?'flex':'none';
+  $('settings-wrap').classList.toggle('show',!isT);
+  $('tab-t').classList.toggle('on',isT); $('tab-s').classList.toggle('on',!isT);
+}
+
+function openPanel(){$('overlay').style.display='block';requestAnimationFrame(()=>$('panel').classList.add('open'));}
+function closePanel(){$('panel').classList.remove('open');setTimeout(()=>$('overlay').style.display='none',220);}
+
+function onInput(el){
+  el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,100)+'px';
+  $('send-btn').disabled=!el.value.trim();
+}
+
+function onKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();doSend();}}
+
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');}
+
+function renderMsgs(){
+  const el=$('msgs');
+  if(!msgs.length){el.innerHTML=`<div class="empty"><div class="empty-icon">🌏</div><div class="empty-text">${t('empty')}</div></div>`;return;}
+  el.innerHTML=msgs.map(m=>{
+    if(m.type==='user'){
+      if(m.img) return `<div class="user-row"><img class="user-img" src="${m.img}"></div>`;
+      return `<div class="user-row"><div class="user-bubble">${esc(m.content)}</div></div>`;
+    }
+    return `<div class="ai-row">
+      <div class="ai-header"><span class="ai-badge">${t('badge')}</span><button class="copy-btn" onclick="doCopy('${m.id}')">⎘</button></div>
+      <div class="ai-bubble">${esc(m.content)}</div>
+      ${m.trg?`<div class="triggers">
+        <button class="trigger-btn" onclick="doTrigger('ctx','${m.id}')">${t('ctx')}</button>
+        <button class="trigger-btn" onclick="doTrigger('simple','${m.id}')">${t('simple')}</button>
+        <button class="trigger-btn trigger-done" onclick="hideTrg('${m.id}')">${t('done')}</button>
+      </div>`:''}
+    </div>`;
+  }).join('');
+  el.scrollTop=el.scrollHeight;
+}
+
+function addMsg(m){msgs.push(m);renderMsgs();}
+function hideTrg(id){const m=msgs.find(x=>x.id===id);if(m){m.trg=false;renderMsgs();}}
+function doCopy(id){const m=msgs.find(x=>x.id===id);if(m)navigator.clipboard.writeText(m.content).then(()=>toast(t('copied')));}
+
+function toast(txt){
+  document.querySelectorAll('.toast').forEach(e=>e.remove());
+  const el=document.createElement('div');el.className='toast';el.textContent=txt;
+  document.body.appendChild(el);setTimeout(()=>el.remove(),2000);
+}
+
+function setLoading(v){$('loading').style.display=v?'flex':'none';}
+
+function getKey(){return prov==='groq'?qKey:gKey;}
+
+async function doSend(){
+  const el=$('inp'),text=el.value.trim();
+  if(!text||busy)return;
+  if(!getKey()){toast(t('noKey'));return;}
+  el.value='';el.style.height='auto';$('send-btn').disabled=true;
+  addMsg({id:String(++mid),type:'user',content:text});
+  busy=true;setLoading(true);
+  try{
+    const r=await translate(text);
+    addMsg({id:String(++mid),type:'ai',content:r.translation,trg:true,orig:text});
+  }catch(e){toast(e.message==='RL'?t('rateLimit'):t('err'));}
+  finally{busy=false;setLoading(false);}
+}
+
+async function doTrigger(type,id){
+  const m=msgs.find(x=>x.id===id);
+  if(!m||!getKey())return;
+  m.trg=false;renderMsgs();busy=true;setLoading(true);
+  const p={
+    ctx:`원문: "${m.orig}"\n번역: "${m.content}"\n이 표현에 대해 현지에서 주의할 점이나 상황 설명을 딱 한 줄로 알려줘. 반드시 JSON: {"translation":"한 줄 설명"}`,
+    simple:`원문: "${m.orig}"\n번역: "${m.content}"\n현지인이 실제로 쓰는 가장 짧고 쉬운 서바이벌 표현과 직관적인 한글 발음을 알려줘. 반드시 JSON: {"translation":"베트남어 표현 (한글발음)"}`
+  }[type];
+  try{
+    const r=await translate(p);
+    addMsg({id:String(++mid),type:'ai',content:r.translation,trg:false});
+  }catch(e){toast(t('err'));}
+  finally{busy=false;setLoading(false);}
+}
+
+async function translate(text){
+  if(prov==='groq')return callGroq(text,SYS);
+  const res=await callGemini({
+    contents:[{parts:[{text}]}],
+    systemInstruction:{parts:[{text:SYS}]},
+    generationConfig:{temperature:0.1,maxOutputTokens:4000,responseMimeType:'application/json'}
+  });
+  const j=await res.json();
+  return parseJ(j?.candidates?.[0]?.content?.parts?.[0]?.text??'');
+}
+
+async function callGemini(body,retry=false){
+  const res=await fetch(`${GEMINI}/models/gemini-2.0-flash:generateContent?key=${gKey}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(res.status===429){if(!retry){await new Promise(r=>setTimeout(r,35000));return callGemini(body,true);}throw new Error('RL');}
+  if(!res.ok)throw new Error('Gemini '+res.status);
+  return res;
+}
+
+async function callGroq(msg,sys){
+  const res=await fetch(GROQ,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+qKey},body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:[{role:'system',content:sys},{role:'user',content:msg}],temperature:0.1,max_tokens:4000})});
+  if(res.status===429)throw new Error('RL');
+  if(!res.ok)throw new Error('Groq '+res.status);
+  const j=await res.json();
+  return parseJ(j?.choices?.[0]?.message?.content??'');
+}
+
+function parseJ(raw){
+  const s=raw.indexOf('{'),e=raw.lastIndexOf('}');
+  if(s<0||e<0)throw new SyntaxError('no json');
+  return JSON.parse(raw.slice(s,e+1));
+}
+
+function doGallery(){closePanel();if(!getKey()){toast(t('noKey'));return;}$('file-inp').click();}
+function doVoice(){closePanel();toast(t('voiceMsg'));}
+
+function onFileChosen(ev){
+  const f=ev.target.files[0];if(!f)return;ev.target.value='';
+  if(!getKey()){toast(t('noKey'));return;}
+  const rd=new FileReader();
+  rd.onload=async e=>{
+    const dataUrl=e.target.result,b64=dataUrl.split(',')[1],mime=f.type||'image/jpeg';
+    addMsg({id:String(++mid),type:'user',content:t('imgLbl'),img:dataUrl});
+    busy=true;setLoading(true);
+    try{
+      const res=await callGemini({
+        contents:[{parts:[{inlineData:{mimeType:mime,data:b64}},{text:'이 이미지의 텍스트를 번역해줘.'}]}],
+        systemInstruction:{parts:[{text:SYS}]},
+        generationConfig:{temperature:0.1,maxOutputTokens:4000,responseMimeType:'application/json'}
+      });
+      const j=await res.json();
+      const r=parseJ(j?.candidates?.[0]?.content?.parts?.[0]?.text??'');
+      addMsg({id:String(++mid),type:'ai',content:r.translation,trg:true,orig:t('imgLbl')});
+    }catch(e){toast(t('err'));}
+    finally{busy=false;setLoading(false);}
+  };
+  rd.readAsDataURL(f);
+}
+
+async function testKey(type){
+  const key=type==='gemini'?$('gem-key').value.trim():$('groq-key').value.trim();
+  if(!key)return;
+  const btn=$(type==='gemini'?'gem-test':'groq-test');
+  btn.disabled=true;btn.textContent='...';
+  const resEl=$(type==='gemini'?'gem-res':'groq-res');
+  try{
+    let ok=false;
+    if(type==='gemini'){
+      const r=await fetch(`${GEMINI}/models/gemini-2.0-flash:generateContent?key=${key}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:'OK'}]}],generationConfig:{maxOutputTokens:5}})});
+      ok=r.ok;
+    }else{
+      const r=await fetch(GROQ,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:[{role:'user',content:'OK'}],max_tokens:5})});
+      ok=r.ok;
+    }
+    resEl.style.display='flex';resEl.className='test-res '+(ok?'res-ok':'res-fail');
+    resEl.textContent=ok?t('testOk'):t('testFail');
+  }catch{resEl.style.display='flex';resEl.className='test-res res-fail';resEl.textContent=t('testFail');}
+  btn.disabled=false;btn.textContent=t('testBtn');
+}
+
+function clearRes(id){$(id).style.display='none';}
+
+// Init
+$('gem-key').value=gKey; $('groq-key').value=qKey;
+setProv(prov); applyLang();
+</script>
+</body>
+</html>

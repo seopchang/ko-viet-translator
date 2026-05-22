@@ -8,7 +8,9 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "icon": "./assets/icon.png",
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.koviet.translator"
@@ -19,7 +21,11 @@
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#ffffff"
       },
-      "permissions": ["RECORD_AUDIO", "READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE"]
+      "permissions": [
+        "RECORD_AUDIO",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
     },
     "plugins": [
       "expo-router",
@@ -29,7 +35,18 @@
           "photosPermission": "번역을 위해 사진 접근이 필요합니다.",
           "cameraPermission": "번역을 위해 카메라 접근이 필요합니다."
         }
-      ]
-    ]
+      ],
+      "expo-audio"
+    ],
+    "web": {
+      "favicon": "./assets/icon.png",
+      "bundler": "metro",
+      "output": "static",
+      "name": "Simple Translator",
+      "shortName": "번역기",
+      "description": "한국어-베트남어 번역기",
+      "themeColor": "#3D2314",
+      "backgroundColor": "#FAF8F5"
+    }
   }
 }

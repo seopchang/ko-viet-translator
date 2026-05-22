@@ -20,7 +20,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as Clipboard from 'expo-clipboard';
 import * as FileSystem from 'expo-file-system';
-import { Audio } from 'expo-av';
+import { useAudioRecorder, AudioModule, RecordingPresets } from 'expo-audio';
 import { useFocusEffect } from 'expo-router';
 import { getSettings } from '../../src/utils/storage';
 import { translateText, translateImage, translateAudio, askFollowUp } from '../../src/services/translationService';
@@ -41,7 +41,7 @@ export default function TranslateScreen() {
   const panelAnim = useRef(new Animated.Value(260)).current;
 
   const [isRecording, setIsRecording] = useState(false);
-  const [recordingObj, setRecordingObj] = useState(null);
+  const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const recordingPulse = useRef(new Animated.Value(1)).current;
 
   const listRef = useRef(null);
@@ -170,6 +170,13 @@ export default function TranslateScreen() {
 
   // ── 음성 녹음 ──────────────────────────────────
   const handleVoice = () => {
+    if (Platform.OS === 'web') {
+      closePanel(() => Alert.alert(
+        language === 'ko' ? '앱 전용 기능' : 'Tính năng chỉ dành cho ứng dụng',
+        language === 'ko' ? '음성 번역은 앱에서만 지원됩니다.' : 'Dịch giọng nói chỉ hỗ trợ trên ứng dụng.'
+      ));
+      return;
+    }
     closePanel(() => startRecording());
   };
 
@@ -182,14 +189,13 @@ export default function TranslateScreen() {
       return;
     }
     try {
-      const { status } = await Audio.requestPermissionsAsync();
-      if (status !== 'granted') {
+      const { granted } = await AudioModule.requestRecordingPermissionsAsync();
+      if (!granted) {
         Alert.alert(t.permissionNeeded, language === 'ko' ? '마이크 권한이 필요합니다.' : 'Cần quyền truy cập microphone.');
         return;
       }
-      await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
-      const { recording } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
-      setRecordingObj(recording);
+      await AudioModule.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
+      audioRecorder.record();
       setIsRecording(true);
       startPulse();
     } catch (e) {
@@ -198,15 +204,15 @@ export default function TranslateScreen() {
   };
 
   const stopRecording = async () => {
-    if (!recordingObj) return;
+    if (!isRecording) return;
     setIsRecording(false);
     stopPulse();
     setLoading(true);
     try {
-      await recordingObj.stopAndUnloadAsync();
-      await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
-      const uri = recordingObj.getURI();
-      setRecordingObj(null);
+      await audioRecorder.stop();
+      await AudioModule.setAudioModeAsync({ allowsRecordingIOS: false });
+      const uri = audioRecorder.uri;
+      if (!uri) throw new Error('No recording URI');
 
       const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
       addMessage({ id: nextId(), type: 'user', content: language === 'ko' ? '[음성]' : '[Giọng nói]', isVoice: true });
